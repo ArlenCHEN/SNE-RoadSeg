@@ -97,3 +97,21 @@ def getScores(conf_matrix):
         iou = IU[1]
         F_score = 2*(recall*pre)/(recall+pre)
     return globalacc, pre, recall, F_score, iou
+
+def compute_scores(pred, label):
+    # h = pred.shape[0]
+    # w = pred.shape[1]
+    # J = w*h
+    eps = 1e-12
+    n_tp = np.count_nonzero(label[pred==1]==True) 
+    n_tn = np.count_nonzero(label[pred==0]==False)
+    n_fp = np.count_nonzero(label[pred==1]==False)
+    n_fn = np.count_nonzero(label[pred==0]==True)
+    
+    acc = (n_tp+n_tn) / (n_tp+n_tn+n_fp+n_fn+eps)
+    precision = n_tp / (n_tp+n_fp+eps)
+    recall = n_tp / (n_tp+n_fn+eps)
+    f_score = 2*n_tp**2 / (2*n_tp**2+n_tp*(n_fp+n_fn)+eps)
+    iou = n_tp / (n_tp+n_fp+n_fn+eps)
+
+    return acc, precision, recall, f_score, iou

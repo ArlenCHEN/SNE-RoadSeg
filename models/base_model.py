@@ -37,6 +37,8 @@ class BaseModel():
         if self.isTrain:
             self.schedulers = [networks.get_scheduler(optimizer, opt) for optimizer in self.optimizers]
 
+        print('In setup, opt.epoch: ', opt.epoch)
+        
         if not self.isTrain or opt.continue_train:
             self.load_networks(opt.epoch)
         self.print_networks(opt.verbose)

@@ -92,14 +92,14 @@ class kittidataset(BaseDataset):
         rgb_image = cv2.cvtColor(cv2.imread(os.path.join(useDir, 'image_2', name)), cv2.COLOR_BGR2RGB)
         depth_image = cv2.imread(os.path.join(useDir, 'depth_u16', name), cv2.IMREAD_ANYDEPTH)
         oriHeight, oriWidth, _ = rgb_image.shape
-        if self.opt.phase == 'test' and self.opt.no_label:
-            # Since we have no gt label (e.g., kitti submission), we generate pseudo gt labels to
-            # avoid destroying the code architecture
-            label = np.zeros((oriHeight, oriWidth), dtype=np.uint8)
-        else:
-            label_image = cv2.cvtColor(cv2.imread(os.path.join(useDir, 'gt_image_2', name[:-10]+'road_'+name[-10:])), cv2.COLOR_BGR2RGB)
-            label = np.zeros((oriHeight, oriWidth), dtype=np.uint8)
-            label[label_image[:,:,2] > 0] = 1
+        # if self.opt.phase == 'test' and self.opt.no_label:
+        #     # Since we have no gt label (e.g., kitti submission), we generate pseudo gt labels to
+        #     # avoid destroying the code architecture
+        #     label = np.zeros((oriHeight, oriWidth), dtype=np.uint8)
+        # else:
+        label_image = cv2.cvtColor(cv2.imread(os.path.join(useDir, 'gt_image_2', name[:-10]+'road_'+name[-10:])), cv2.COLOR_BGR2RGB)
+        label = np.zeros((oriHeight, oriWidth), dtype=np.uint8)
+        label[label_image[:,:,2] > 0] = 1
 
         # resize image to enable sizes divide 32
         rgb_image = cv2.resize(rgb_image, self.use_size)

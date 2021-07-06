@@ -105,7 +105,7 @@ class RoadSeg(nn.Module):
     def __init__(self, num_labels, use_sne):
         super(RoadSeg, self).__init__()
 
-        self.num_resnet_layers = 152
+        self.num_resnet_layers = 34
 
         if self.num_resnet_layers == 18:
             resnet_raw_model1 = torchvision.models.resnet18(pretrained=True)

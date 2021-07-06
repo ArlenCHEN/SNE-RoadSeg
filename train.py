@@ -48,26 +48,36 @@ if __name__ == '__main__':
         iter_data_time = time.time()
         epoch_iter = 0
         train_loss_iter = []
+        
+        # Determine the label percentage
+        label_percent = 100
+        num_sample_label = int(131*label_percent/100)
+        random_num = np.random.random((num_sample_label))
+        label_idx = (131*random_num).astype(int)
+
         for i, data in enumerate(train_dataset):
-            iter_start_time = time.time()
-            if total_steps % train_opt.print_freq == 0:
-                t_data = iter_start_time - iter_data_time
-            total_steps += train_opt.batch_size
-            epoch_iter += train_opt.batch_size
-            model.set_input(data)
-            model.optimize_parameters()
+            if i in label_idx:
+                iter_start_time = time.time()
+                if total_steps % train_opt.print_freq == 0:
+                    t_data = iter_start_time - iter_data_time
+                total_steps += train_opt.batch_size
+                epoch_iter += train_opt.batch_size
+                model.set_input(data)
+                model.optimize_parameters()
 
-            if total_steps % train_opt.print_freq == 0:
-                tfcount = tfcount + 1
-                losses = model.get_current_losses()
-                train_loss_iter.append(losses["segmentation"])
-                t = (time.time() - iter_start_time) / train_opt.batch_size
-                print_current_losses(epoch, epoch_iter, losses, t, t_data)
-                # There are several whole_loss values shown in tensorboard in one epoch,
-                # to help better see the optimization phase
-                writer.add_scalar('train/whole_loss', losses["segmentation"], tfcount)
+                if total_steps % train_opt.print_freq == 0:
+                    tfcount = tfcount + 1
+                    losses = model.get_current_losses()
+                    train_loss_iter.append(losses["segmentation"])
+                    t = (time.time() - iter_start_time) / train_opt.batch_size
+                    print_current_losses(epoch, epoch_iter, losses, t, t_data)
+                    # There are several whole_loss values shown in tensorboard in one epoch,
+                    # to help better see the optimization phase
+                    writer.add_scalar('train/whole_loss', losses["segmentation"], tfcount)
 
-            iter_data_time = time.time()
+                iter_data_time = time.time()
+            else:
+                continue
 
         mean_loss = np.mean(train_loss_iter)
         # One average training loss value in tensorboard in one epoch
@@ -90,46 +100,48 @@ if __name__ == '__main__':
         print('End of epoch %d / %d \t Time Taken: %d sec' %   (epoch, train_opt.nepoch, time.time() - epoch_start_time))
         model.update_learning_rate()
 
-        ### Evaluation on the validation set ###
-        model.eval()
-        valid_loss_iter = []
-        epoch_iter = 0
-        conf_mat = np.zeros((valid_dataset.dataset.num_labels, valid_dataset.dataset.num_labels), dtype=np.float)
-        with torch.no_grad():
-            for i, data in enumerate(valid_dataset):
-                model.set_input(data)
-                model.forward()
-                model.get_loss()
-                epoch_iter += valid_opt.batch_size
-                gt = model.label.cpu().int().numpy()
-                _, pred = torch.max(model.output.data.cpu(), 1)
-                pred = pred.float().detach().int().numpy()
+        model.save_networks(str(label_percent))
 
-                # Resize images to the original size for evaluation
-                image_size = model.get_image_oriSize()
-                oriSize = (image_size[0].item(), image_size[1].item())
-                gt = np.expand_dims(cv2.resize(np.squeeze(gt, axis=0), oriSize, interpolation=cv2.INTER_NEAREST), axis=0)
-                pred = np.expand_dims(cv2.resize(np.squeeze(pred, axis=0), oriSize, interpolation=cv2.INTER_NEAREST), axis=0)
+        # ### Evaluation on the validation set ###
+        # model.eval()
+        # valid_loss_iter = []
+        # epoch_iter = 0
+        # conf_mat = np.zeros((valid_dataset.dataset.num_labels, valid_dataset.dataset.num_labels), dtype=np.float)
+        # with torch.no_grad():
+        #     for i, data in enumerate(valid_dataset):
+        #         model.set_input(data)
+        #         model.forward()
+        #         model.get_loss()
+        #         epoch_iter += valid_opt.batch_size
+        #         gt = model.label.cpu().int().numpy()
+        #         _, pred = torch.max(model.output.data.cpu(), 1)
+        #         pred = pred.float().detach().int().numpy()
 
-                conf_mat += confusion_matrix(gt, pred, valid_dataset.dataset.num_labels)
-                losses = model.get_current_losses()
-                valid_loss_iter.append(model.loss_segmentation)
-                print('valid epoch {0:}, iters: {1:}/{2:} '.format(epoch, epoch_iter, len(valid_dataset) * valid_opt.batch_size), end='\r')
+        #         # Resize images to the original size for evaluation
+        #         image_size = model.get_image_oriSize()
+        #         oriSize = (image_size[0].item(), image_size[1].item())
+        #         gt = np.expand_dims(cv2.resize(np.squeeze(gt, axis=0), oriSize, interpolation=cv2.INTER_NEAREST), axis=0)
+        #         pred = np.expand_dims(cv2.resize(np.squeeze(pred, axis=0), oriSize, interpolation=cv2.INTER_NEAREST), axis=0)
 
-        avg_valid_loss = torch.mean(torch.stack(valid_loss_iter))
-        globalacc, pre, recall, F_score, iou = getScores(conf_mat)
+        #         conf_mat += confusion_matrix(gt, pred, valid_dataset.dataset.num_labels)
+        #         losses = model.get_current_losses()
+        #         valid_loss_iter.append(model.loss_segmentation)
+        #         print('valid epoch {0:}, iters: {1:}/{2:} '.format(epoch, epoch_iter, len(valid_dataset) * valid_opt.batch_size), end='\r')
 
-        # Record performance on the validation set
-        writer.add_scalar('valid/loss', avg_valid_loss, epoch)
-        writer.add_scalar('valid/global_acc', globalacc, epoch)
-        writer.add_scalar('valid/pre', pre, epoch)
-        writer.add_scalar('valid/recall', recall, epoch)
-        writer.add_scalar('valid/F_score', F_score, epoch)
-        writer.add_scalar('valid/iou', iou, epoch)
+        # avg_valid_loss = torch.mean(torch.stack(valid_loss_iter))
+        # globalacc, pre, recall, F_score, iou = getScores(conf_mat)
 
-        # Save the best model according to the F-score, and record corresponding epoch number in tensorboard
-        if F_score > F_score_max:
-            print('saving the model at the end of epoch %d, iters %d' % (epoch, total_steps))
-            model.save_networks('best')
-            F_score_max = F_score
-            writer.add_text('best model', str(epoch))
+        # # Record performance on the validation set
+        # writer.add_scalar('valid/loss', avg_valid_loss, epoch)
+        # writer.add_scalar('valid/global_acc', globalacc, epoch)
+        # writer.add_scalar('valid/pre', pre, epoch)
+        # writer.add_scalar('valid/recall', recall, epoch)
+        # writer.add_scalar('valid/F_score', F_score, epoch)
+        # writer.add_scalar('valid/iou', iou, epoch)
+
+        # # Save the best model according to the F-score, and record corresponding epoch number in tensorboard
+        # if F_score > F_score_max:
+        #     print('saving the model at the end of epoch %d, iters %d' % (epoch, total_steps))
+        #     model.save_networks('best')
+        #     F_score_max = F_score
+        #     writer.add_text('best model', str(epoch))

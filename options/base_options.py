@@ -12,7 +12,7 @@ class BaseOptions():
 
     def initialize(self, parser):
         parser.add_argument('--dataroot', required=True, help='path to images, should have training, validation and testing')
-        parser.add_argument('--batch_size', type=int, default=2, help='input batch size')
+        parser.add_argument('--batch_size', type=int, default=1, help='input batch size')
         parser.add_argument('--useWidth', type=int, default=1248, help='scale images to this width')
         parser.add_argument('--useHeight', type=int, default=384, help='scale images to this height')
         parser.add_argument('--gpu_ids', type=str, default='0', help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
