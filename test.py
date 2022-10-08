@@ -17,7 +17,9 @@ if __name__ == '__main__':
     opt.serial_batches = True  # no shuffle
     opt.isTrain = False
 
-    percent_list = [1, 10, 100]
+    percent_list = [1, 30, 100]
+    # percent_list = [1, 3, 5, 7]
+
     for label_percent in percent_list:
         opt.epoch = str(label_percent)
 
@@ -48,7 +50,7 @@ if __name__ == '__main__':
                 gt = model.label.cpu().int().numpy()
                 _, pred = torch.max(model.output.data.cpu(), 1)
                 pred = pred.float().detach().int().numpy()
-                save_images(save_dir, model.get_current_visuals(), model.get_image_names(), model.get_image_oriSize(), opt.prob_map)
+                # save_images(save_dir, model.get_current_visuals(), model.get_image_names(), model.get_image_oriSize(), opt.prob_map)
                 gt = np.squeeze(gt)
                 pred = np.squeeze(pred)
 
@@ -75,18 +77,18 @@ if __name__ == '__main__':
                     ax1.set_yticklabels([])
                     ax1.axis('off')
 
-                    ax1 = plt.subplot(gs[0,1])
-                    ax1.imshow(gt, cmap=img_color)
-                    ax1.set_xticklabels([])
-                    ax1.set_yticklabels([])
-                    ax1.axis('off')
+                    ax2 = plt.subplot(gs[0,1])
+                    ax2.imshow(gt, cmap=img_color)
+                    ax2.set_xticklabels([])
+                    ax2.set_yticklabels([])
+                    ax2.axis('off')
 
-                    ax1 = plt.subplot(gs[0,2])
-                    ax1.imshow(pred, cmap=img_color)
-                    ax1.set_xticklabels([])
-                    ax1.set_yticklabels([])
-                    ax1.axis('off')
-                    plt.savefig('./test_imgs/'+opt.epoch+'-'+str(i)+'.png')
+                    ax3 = plt.subplot(gs[0,2])
+                    ax3.imshow(pred, cmap=img_color)
+                    ax3.set_xticklabels([])
+                    ax3.set_yticklabels([])
+                    ax3.axis('off')
+                    plt.savefig('./test_imgs_cityscapes/'+opt.epoch+'-'+str(i)+'.png')
                     # plt.show()
 
                 acc, precision, recall, f_score, iou = compute_scores(pred, gt)

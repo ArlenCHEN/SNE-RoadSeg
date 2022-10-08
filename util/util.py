@@ -12,7 +12,9 @@ def save_images(save_dir, visuals, image_name, image_size, prob_map):
     oriSize = (image_size[0].item(), image_size[1].item())
     palet_file = 'datasets/palette.txt'
     impalette = list(np.genfromtxt(palet_file, dtype=np.uint8).reshape(3*256))
-
+    print('image name: ', image_name)
+    input()
+    
     for label, im_data in visuals.items():
         if label == 'output':
             if prob_map:
